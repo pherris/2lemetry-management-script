@@ -77,8 +77,30 @@ loadIfValidScript () {
 getAccountInformation () {
   json_response=$(curl -s --user $1:$2 $api_url/2/account/domain)
   topicspace=$(node -pe 'JSON.parse(process.argv[1]).rowkey' ${json_response// /_})
+
   echo "Topic space: " $topicspace;
+  echo "Used $(node -pe 'JSON.parse(process.argv[1]).activedlicenses' ${json_response// /_}) of $(node -pe 'JSON.parse(process.argv[1]).licenselimit' ${json_response// /_}) licenses"
+  echo ""
 }
+
+##MAP
+prefix=$(basename $0)
+mapdir=$(mktemp -dt ${prefix})
+trap 'rm -r ${mapdir}' EXIT
+
+put() {
+  [ "$#" != 3 ] && exit 1
+  mapname=$1; key=$2; value=$3
+  [ -d "${mapdir}/${mapname}" ] || mkdir "${mapdir}/${mapname}"
+  echo $value >"${mapdir}/${mapname}/${key}"
+}
+
+get() {
+  [ "$#" != 2 ] && exit 1
+  mapname=$1; key=$2
+  cat "${mapdir}/${mapname}/${key}"
+}
+##/MAP
 
 # getopts
 while getopts r:d:hu: flag; do
@@ -144,11 +166,33 @@ if [[ $runfile ]]
 
     getAccountInformation $uname $pwd
 
-    echo "Determining variables to configure..."
-
     echo "Raw Script:"
-    echo ""
     echo $script
     echo ""
+
+    echo "replacing common configs:"
+    echo "topicspace:" $topicspace
+    echo ""
+
+    #write script to file for manipulation
+    if [ -f "$rule_name.tmp" ]
+    then
+      echo "$rule_name.tmp found"
+      echo "ERROR: temp file already exists, are you sure you are the only one executing this command?"
+      exit 1;
+    fi
+
+    echo ${script//\{\{topicspace\}\}/$topicspace} > $rule_name.tmp
+
+    echo "formatting needed for: "
+
+    #find all variables that need replacement
+    for key in `grep -oE "{{\w*}}" $rule_name.tmp  | sort | uniq -c`
+    do
+      echo $key
+      
+    done
+
+    rm $rule_name.tmp
 fi
 
