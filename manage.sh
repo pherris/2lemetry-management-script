@@ -195,6 +195,7 @@ if [[ $runfile ]]
                               });encodeURIComponent(args);' $formatted_rule)
 
     #replacement(s) completed, run rule
+    echo $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name
     response=$(curl -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name)
 
     echo $response
