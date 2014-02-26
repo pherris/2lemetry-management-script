@@ -14,6 +14,7 @@ echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
 #script defaults
 topicspace=""
 api_url="http://api.m2m.io"
+tmp="tmp/"
 
 usage () {
   echo ""
@@ -67,9 +68,9 @@ loadIfValidScript () {
       exit 1;
   fi
 
-  if [[ -z $rule_name ]]
+  if [[ -z $name ]]
     then
-      echo "error: script not configured correctly, no 'rule_name' (must be unique).";
+      echo "error: script not configured correctly, no 'name' (must be unique).";
       exit 1;
   fi
 }
@@ -83,31 +84,13 @@ getAccountInformation () {
   echo ""
 }
 
-##MAP
-prefix=$(basename $0)
-mapdir=$(mktemp -dt ${prefix})
-trap 'rm -r ${mapdir}' EXIT
-
-put() {
-  [ "$#" != 3 ] && exit 1
-  mapname=$1; key=$2; value=$3
-  [ -d "${mapdir}/${mapname}" ] || mkdir "${mapdir}/${mapname}"
-  echo $value >"${mapdir}/${mapname}/${key}"
-}
-
-get() {
-  [ "$#" != 2 ] && exit 1
-  mapname=$1; key=$2
-  cat "${mapdir}/${mapname}/${key}"
-}
-##/MAP
-
 # getopts
 while getopts r:d:hu: flag; do
   case $flag in
     r)
       #set runfile to value of -r
       runfile=$OPTARG
+      describefile=$OPTARG
       ;;
     d)
       describefile=$OPTARG
@@ -128,14 +111,17 @@ done
 shift $(( OPTIND - 1 ));
 #done with method definition and parameter input
 
-if [[ $describefile ]]
+if [[ $runfile||$describefile ]]
   then 
     echo "Reading decription of scripts/$describefile";
     echo ""
 
     source scripts/$describefile
 
-    echo "Description: \n$description";
+    echo "~~ RULE ~~"
+    echo "Name:        $name"
+    echo "Description: $description";
+    echo "Resource:    $resource";
     echo ""
 fi
 
@@ -175,24 +161,43 @@ if [[ $runfile ]]
     echo ""
 
     #write script to file for manipulation
-    if [ -f "$rule_name.tmp" ]
+    if [ -f "$name.tmp" ]
     then
-      echo "$rule_name.tmp found"
+      echo "$name.tmp found"
       echo "ERROR: temp file already exists, are you sure you are the only one executing this command?"
       exit 1;
     fi
 
-    echo ${script//\{\{topicspace\}\}/$topicspace} > $rule_name.tmp
+    mkdir -p $tmp
+
+    echo ${script//\{\{topicspace\}\}/$topicspace} > $tmp/$name.tmp
+
+    cat $tmp/$name.tmp
 
     echo "formatting needed for: "
 
     #find all variables that need replacement
-    for key in `grep -oE "{{\w*}}" $rule_name.tmp  | sort | uniq -c`
+    for key in `grep -oE "{{\w*}}" $tmp/$name.tmp  | sort | uniq`
     do
-      echo $key
-      
+      read -p "$key: " ans
+      sed -i'.bak' -e 's/'$key'/'$ans'/g' $tmp/$name.tmp
     done
 
-    rm $rule_name.tmp
-fi
+    #replace quotes and urlencode
+    #sed -i'.bak' -e 's/"/\\"/g' $name.tmp
 
+    formatted_rule=$(cat $tmp/$name.tmp)
+
+    formatted_rule=$(node -pe 'var args = "";process.argv.forEach(function(val, index, array) {
+                                if (index > 0) {
+                                  args += val + " ";
+                                }
+                              });encodeURIComponent(args);' $formatted_rule)
+
+    #replacement(s) completed, run rule
+    response=$(curl -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name)
+
+    echo $response
+
+    rm $tmp/$name.tmp*
+fi
