@@ -1,5 +1,5 @@
 description="This script creates a rule that forwards Trailer Tracking drop/hook messages on the p/{ENV}/mop/+/207/tt topic to the configured HTTP end point."
-script="\"{{topicspace}}/{{environment|dcdev|SLASH}}mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment|dcdev|DOT}}{{domain}}/trailer-service/hookDrop\" Content-Type:\"application/octet-stream\""
+script="\"{{topicspace}}/{{environment|SLASH}}mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment|DOT}}{{domain}}/trailer-service/hookDrop\" Content-Type:\"application/octet-stream\""
 resource="/2/account/domain/{{topicspace}}/rule"
 name="itest2a"
 

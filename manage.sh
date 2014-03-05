@@ -86,19 +86,25 @@ ruleExists () {
 
   json_response=$(curl -s --user $1:$2 $api_url/2/account/domain/$topicspace/rule)
   
-
-  if [[ -n `echo $json_response | grep "$name"` ]]; 
+  if [[ -n `echo $json_response | grep "$3"` ]]; 
     then
-    echo "error: a rule named '$name' already exists. Please delete that rule before creating a new one."
-    exit 1;
+      #can add prompt to remove existing rule here
+      echo "error: a rule named '$3' already exists. Please delete that rule before creating a new one."
+      exit 1;
   fi
 
-  echo "rule with $name does not exist, continuing."  
+  echo "rule with $3 does not exist, continuing."  
 }
 
 getAccountInformation () {
   json_response=$(curl -s --user $1:$2 $api_url/2/account/domain)
   topicspace=$(node -pe 'JSON.parse(process.argv[1]).rowkey' ${json_response// /_})
+
+  if [[ -n `echo $json_response | grep "401"` ]];
+    then
+      echo "Bad username/password."
+      exit 1;
+  fi
 
   echo "Topic space: " $topicspace;
   echo "Used $(node -pe 'JSON.parse(process.argv[1]).activedlicenses' ${json_response// /_}) of $(node -pe 'JSON.parse(process.argv[1]).licenselimit' ${json_response// /_}) licenses"
@@ -177,8 +183,6 @@ if [[ $runfile ]]
     echo $script
     echo ""
 
-    ruleExists $uname $pwd $name
-
     echo "replacing common configs:"
     echo "topicspace:" $topicspace
     echo ""
@@ -201,8 +205,7 @@ if [[ $runfile ]]
     echo "Please Configure: "
 
     #find all variables that need replacement
-#    for key in `grep -oE "{{\w*}}" $tmp/$name.tmp  | sort | uniq` #simple key {{bla}}
-    for key in `grep -oE "({{\??\w+\|\w+\|[^}]+}})|({{\w+}})" $tmp/$name.tmp  | sort | uniq` ##complex key {{?key|default|post}}
+    for key in `grep -oE "({{\??\w+\|[^}]+}})|({{\w+}})" $tmp/$name.tmp  | sort | uniq` ##complex key {{key|post}}
     do
       formatted_key=$(node -pe 'process.argv[1].replace("{{", "").replace("}}", "");' $key)
       
@@ -214,14 +217,16 @@ if [[ $runfile ]]
           #split out my values
           IFS='|' read -ra complex_variable <<< "$formatted_key"
           
-          read -p "${complex_variable[0]} [${complex_variable[1]}] :" ans
-          
-          if test -z "$ans";
+          while [[ -z $ans ]]
+            do
+              read -p "${complex_variable[0]} :" ans
+          done
+
+          #if we're asking for environment, let's add this for appending to the rule name
+          if [[ ${complex_variable[1]}=="envorinment" ]];
             then
-              ans=${complex_variable[1]}${complex_variable[2]}
-            else
-              ans=$ans${complex_variable[2]}
-          fi
+              environment=${complex_variable[1]}
+          fi 
       fi 
       sed -i'.bak' -e 's/'$key'/'$ans'/g' $tmp/$name.tmp
     done
@@ -230,8 +235,16 @@ if [[ $runfile ]]
     sed -i'.bak' -e 's/DOT/./g' $tmp/$name.tmp
     sed -i'.bak' -e 's/SLASH/\//g' $tmp/$name.tmp
 
-    #replace quotes and urlencode
-    #sed -i'.bak' -e 's/"/\\"/g' $name.tmp
+    #make sure we have an environment (if not prompt for it) and add to name
+    while [[ -z $environment ]]
+      do 
+        read -p "Environment: " environment
+    done
+
+    formatted_name="$name-$environment"
+
+    #check to see if this rule name already exist
+    ruleExists $uname $pwd $formatted_name
 
     formatted_rule=$(cat $tmp/$name.tmp)
 
@@ -249,12 +262,12 @@ if [[ $runfile ]]
                               encodeURIComponent(args.trim()).replace(/%20/g, "+");' $formatted_rule)
 
     #replacement(s) completed, run rule
-    
-    response=$(curl -X POST -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name)
+    response=$(curl -X POST -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$formatted_name)
 
     echo "Response: "
     echo $response
     echo ""
 
+    #clean up
     rm $tmp/$name.tmp*
 fi
