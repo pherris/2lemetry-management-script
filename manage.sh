@@ -246,6 +246,9 @@ if [[ $runfile ]]
     ruleExists $uname $pwd $formatted_name
 
     formatted_rule=$(cat $tmp/$name.tmp)
+    
+    #clean up
+    rm $tmp/$name.tmp*
 
     echo ""
     echo "Formatted Rule: "
@@ -269,6 +272,4 @@ if [[ $runfile ]]
     echo $response
     echo ""
 
-    #clean up
-    rm $tmp/$name.tmp*
 fi

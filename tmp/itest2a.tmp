@@ -1,1 +1,0 @@
-"com.peoplenetonline/dcdev/mop/+/207/tt" {} -> post url:"https://trailer.dcdev.peoplenetonline.com/trailer-service/hookDrop" Content-Type:"application/octet-stream" Authorization:" Basic (base64 encode username:pwd)"
