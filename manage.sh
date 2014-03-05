@@ -75,6 +75,27 @@ loadIfValidScript () {
   fi
 }
 
+#looks up existing rules and determines whether or not there is an existing rule by this name
+#simple sting matching - if the rule name is in the returned JSON, it's deemed to be there. TODO make smarter
+ruleExists () {
+  if [[ -z $3 ]]
+    then 
+      echo "error: no rule name";
+      exit 1;
+  fi
+
+  json_response=$(curl -s --user $1:$2 $api_url/2/account/domain/$topicspace/rule)
+  
+
+  if [[ -n `echo $json_response | grep "$name"` ]]; 
+    then
+    echo "error: a rule named '$name' already exists. Please delete that rule before creating a new one."
+    exit 1;
+  fi
+
+  echo "rule with $name does not exist, continuing."  
+}
+
 getAccountInformation () {
   json_response=$(curl -s --user $1:$2 $api_url/2/account/domain)
   topicspace=$(node -pe 'JSON.parse(process.argv[1]).rowkey' ${json_response// /_})
@@ -156,6 +177,8 @@ if [[ $runfile ]]
     echo $script
     echo ""
 
+    ruleExists $uname $pwd $name
+
     echo "replacing common configs:"
     echo "topicspace:" $topicspace
     echo ""
@@ -226,11 +249,12 @@ if [[ $runfile ]]
                               encodeURIComponent(args.trim()).replace(/%20/g, "+");' $formatted_rule)
 
     #replacement(s) completed, run rule
-    echo $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='${formatted_rule}'&name='$name
-    echo $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name
-    response=$(curl -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name)
+    
+    response=$(curl -X POST -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name)
 
+    echo "Response: "
     echo $response
+    echo ""
 
     rm $tmp/$name.tmp*
 fi
