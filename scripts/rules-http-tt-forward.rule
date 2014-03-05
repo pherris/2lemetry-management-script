@@ -1,8 +1,6 @@
 description="This script creates a rule that forwards Trailer Tracking drop/hook messages on the p/{ENV}/mop/+/207/tt topic to the configured HTTP end point."
-script="\"{{topicspace}}/{{environment|SLASH}}mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment|DOT}}{{domain}}/trailer-service/hookDrop\" Content-Type:\"application/octet-stream\""
+script="\"{{topicspace}}/{{environment|SLASH}}mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment|DOT}}{{domain}}/trailer-service/hookDrop\" Content-Type:\"application/octet-stream\" Authorization:\" Basic (base64 encode username:pwd)\""
 resource="/2/account/domain/{{topicspace}}/rule"
 name="itest2a"
 
-#how to handle when environment is not required? need to take out double // and double ..
-#need to provision a env for the name too...
-#syntax{{param|default|appended-if-populated[DOT or SLASH supported]}}
+#syntax{{param|appended-if-populated[DOT or SLASH supported]}}

@@ -86,14 +86,14 @@ ruleExists () {
 
   json_response=$(curl -s --user $1:$2 $api_url/2/account/domain/$topicspace/rule)
   
-  if [[ -n `echo $json_response | grep "$3"` ]]; 
+  if [[ -n `echo $json_response | grep "\"$3\""` ]]; 
     then
       #can add prompt to remove existing rule here
       echo "error: a rule named '$3' already exists. Please delete that rule before creating a new one."
       exit 1;
   fi
 
-  echo "rule with $3 does not exist, continuing."  
+  echo "rule named $3 does not exist, continuing."  
 }
 
 getAccountInformation () {
@@ -199,8 +199,6 @@ if [[ $runfile ]]
 
     echo ${script//\{\{topicspace\}\}/$topicspace} > $tmp/$name.tmp
 
-    cat $tmp/$name.tmp
-
     echo ""
     echo "Please Configure: "
 
@@ -217,16 +215,18 @@ if [[ $runfile ]]
           #split out my values
           IFS='|' read -ra complex_variable <<< "$formatted_key"
           
-          while [[ -z $ans ]]
-            do
-              read -p "${complex_variable[0]} :" ans
-          done
-
+          read -p "${complex_variable[0]} (blank for none) :" ans
+      
           #if we're asking for environment, let's add this for appending to the rule name
           if [[ ${complex_variable[1]}=="envorinment" ]];
             then
-              environment=${complex_variable[1]}
+              environment=$ans
           fi 
+
+          if [[ ! -z $ans ]]; #if not using nothing (prod), append the default
+            then
+              ans=$ans${complex_variable[1]}
+          fi
       fi 
       sed -i'.bak' -e 's/'$key'/'$ans'/g' $tmp/$name.tmp
     done
@@ -235,14 +235,13 @@ if [[ $runfile ]]
     sed -i'.bak' -e 's/DOT/./g' $tmp/$name.tmp
     sed -i'.bak' -e 's/SLASH/\//g' $tmp/$name.tmp
 
-    #make sure we have an environment (if not prompt for it) and add to name
-    while [[ -z $environment ]]
-      do 
-        read -p "Environment: " environment
-    done
-
-    formatted_name="$name-$environment"
-
+    if [[ -z $environment ]]
+      then 
+        formatted_name=$name
+      else 
+        formatted_name="$name-$environment"
+    fi
+    
     #check to see if this rule name already exist
     ruleExists $uname $pwd $formatted_name
 
@@ -252,6 +251,8 @@ if [[ $runfile ]]
     echo "Formatted Rule: "
     echo $formatted_rule
     echo ""
+
+    read -p "Press enter to create rule..."
 
     formatted_rule=$(node -pe 'var args = "";
                                process.argv.forEach(function(val, index, array) {
