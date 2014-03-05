@@ -1,6 +1,7 @@
 description="This script creates a rule that forwards Trailer Tracking drop/hook messages on the p/{ENV}/mop/+/207/tt topic to the configured HTTP end point."
-script="\"{{topicspace}}/{{environment|SLASH}}mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment|DOT}}{{domain}}/trailer-service/hookDrop\" Content-Type:\"application/octet-stream\" Authorization:\" Basic (base64 encode username:pwd)\""
+script="\"{{topicspace}}/{{environment|SLASH}}mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment|DOT}}{{domain}}/trailer-service/hookDrop\" Content-Type:\"application/octet-stream\" Authorization:\" Basic c2VydmljZTpzKmN1ciM=\""
 resource="/2/account/domain/{{topicspace}}/rule"
-name="itest2a"
+name="internal-tt-forward-to-service"
 
 #syntax{{param|appended-if-populated[DOT or SLASH supported]}}
+#user/pwd: service s*cur#
