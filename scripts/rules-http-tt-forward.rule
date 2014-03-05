@@ -1,4 +1,8 @@
 description="This script creates a rule that forwards Trailer Tracking drop/hook messages on the p/{ENV}/mop/+/207/tt topic to the configured HTTP end point."
-script="\"{{topicspace}}/{{environment}}/mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment}}.{{domain}}.com/trailer-tracking/hookDrop\" Content-Type:\"application/octet-stream\""
+script="\"{{topicspace}}/{{environment|dcdev|\/}}mop/+/207/tt\" {} -> post url:\"https://trailer.{{environment|dcdev|.}}{{domain}}/trailer-service/hookDrop\" Content-Type:\"application/octet-stream\""
 resource="/2/account/domain/{{topicspace}}/rule"
 name="internal-tt-forward-to-service"
+
+#how to handle when environment is not required? need to take out double // and double ..
+#need to provision a env for the name too...
+#syntax{{param|default|appended-if-populated}}

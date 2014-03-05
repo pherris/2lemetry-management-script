@@ -177,9 +177,29 @@ if [[ $runfile ]]
     echo "formatting needed for: "
 
     #find all variables that need replacement
-    for key in `grep -oE "{{\w*}}" $tmp/$name.tmp  | sort | uniq`
+#    for key in `grep -oE "{{\w*}}" $tmp/$name.tmp  | sort | uniq` #simple key {{bla}}
+    for key in `grep -oE "({{\??\w+\|\w+\|[^}]+}})|({{\w+}})" $tmp/$name.tmp  | sort | uniq` ##complex key {{?key|default|post}}
     do
-      read -p "$key: " ans
+      formatted_key=$(node -pe 'process.argv[1].replace("{{", "").replace("}}", "");' $key)
+      
+      if [[ -n `echo $key | grep -v "|"` ]]; 
+        then
+          #echo "simple key "
+          read -p "${key//\}/}: " ans
+          #sed -i'.bak' -e 's/'$key'/'$ans'/g' $tmp/$name.tmp
+        else 
+          #split out my values
+          IFS='|' read -ra complex_variable <<< "$formatted_key"
+          
+          read -p "${complex_variable[0]} [${complex_variable[1]}] :" ans
+          
+          if test -z "$ans";
+            then
+              ans=${complex_variable[1]}${complex_variable[2]}
+            else
+              ans=$ans${complex_variable[2]}
+          fi
+      fi 
       sed -i'.bak' -e 's/'$key'/'$ans'/g' $tmp/$name.tmp
     done
 
@@ -188,17 +208,22 @@ if [[ $runfile ]]
 
     formatted_rule=$(cat $tmp/$name.tmp)
 
+    echo ""
+    echo $formatted_rule
+    echo ""
+
     formatted_rule=$(node -pe 'var args = "";process.argv.forEach(function(val, index, array) {
                                 if (index > 0) {
-                                  args += val + " ";
+                                  args += val.replace("..", ".").replace("[^:]\/\/", "\/", "g") + " ";
                                 }
-                              });encodeURIComponent(args);' $formatted_rule)
+                              });
+                              encodeURIComponent(args);' $formatted_rule)
 
     #replacement(s) completed, run rule
-    echo $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name
+    echo $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='${formatted_rule}'&name='$name
     response=$(curl -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$name)
 
     echo $response
 
-    rm $tmp/$name.tmp*
+    #rm $tmp/$name.tmp*
 fi
