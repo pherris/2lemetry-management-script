@@ -21,15 +21,15 @@ usage () {
   echo "Usage: $0 ";
   echo ""
 
-  echo "  -runfile <filename> ";
+  echo "  -r<filename> ";
   echo "            filename is the name of the command file in the ./scripts/ directory";
   echo "            Files have a syntax of description=, resource= and script= with the script containing any variables that need to be configured in double braces e.g. {{var}}. "
   echo "            Scripts are executed via curl against the 2lemetry API via the resource identified.";
   echo ""
-  echo "  -describe <filename> ";
+  echo "  -d<filename> ";
   echo "            describes the actions this script takes without executing them";
   echo ""
-  echo "  -help ";
+  echo "  -h";
   echo "            display this help\n";
   
   if [[ ! -z $1 ]]
