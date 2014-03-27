@@ -266,8 +266,8 @@ if [[ $runfile ]]
                               encodeURIComponent(args.trim()).replace(/%20/g, "+");' $formatted_rule)
 
     #replacement(s) completed, run rule
-    curlUrl="$api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$formatted_name"
-    response=$(curl -v -X POST -s --user $uname:$pwd $curlUrl)
+    curlUrl="$api_url${resource//\{\{topicspace\}\}/$topicspace}?rule=$formatted_rule&name=$formatted_name"
+    response=$(curl -X POST -s --user $uname:$pwd $curlUrl)
 
     echo "Response: "
     echo $response
