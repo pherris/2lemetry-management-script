@@ -203,7 +203,7 @@ if [[ $runfile ]]
     echo "Please Configure: "
 
     #find all variables that need replacement
-    for key in `grep -oE "({{\??\w+\|[^}]+}})|({{\w+}})" $tmp/$name.tmp  | sort | uniq` ##complex key {{key|post}}
+    for key in `grep -oE "(\{\{\??\w+\|[^\}]+\}\})|(\{\{\w+\}\})" $tmp/$name.tmp  | sort | uniq` ##complex key {{key|post}}
     do
       formatted_key=$(node -pe 'process.argv[1].replace("{{", "").replace("}}", "");' $key)
       
