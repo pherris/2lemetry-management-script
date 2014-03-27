@@ -14,7 +14,7 @@ echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
 #script defaults
 topicspace=""
 api_url="http://api.m2m.io"
-tmp="tmp/"
+tmp="tmp"
 
 usage () {
   echo ""
