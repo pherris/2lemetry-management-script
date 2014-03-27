@@ -1,6 +1,6 @@
 
 
-#!/bin/sh
+#!/bin/sh -x
 
 #dependencies: nodejs
 #/bin/sh used for source command
@@ -266,7 +266,8 @@ if [[ $runfile ]]
                               encodeURIComponent(args.trim()).replace(/%20/g, "+");' $formatted_rule)
 
     #replacement(s) completed, run rule
-    response=$(curl -X POST -s --user $uname:$pwd $api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$formatted_name)
+    curlUrl="$api_url${resource//\{\{topicspace\}\}/$topicspace}'?rule='$formatted_rule'&name='$formatted_name"
+    response=$(curl -v -X POST -s --user $uname:$pwd $curlUrl)
 
     echo "Response: "
     echo $response
