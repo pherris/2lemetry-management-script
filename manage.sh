@@ -1,6 +1,4 @@
-
-
-#!/bin/sh -x
+#!/bin/bash 
 
 #dependencies: nodejs
 #/bin/sh used for source command
@@ -218,7 +216,7 @@ if [[ $runfile ]]
           read -p "${complex_variable[0]} (blank for none) :" ans
       
           #if we're asking for environment, let's add this for appending to the rule name
-          if [[ ${complex_variable[1]}=="envorinment" ]];
+          if [[ ${complex_variable[1]}=="environment" ]];
             then
               environment=$ans
           fi 
@@ -267,10 +265,10 @@ if [[ $runfile ]]
 
     #replacement(s) completed, run rule
     curlUrl="$api_url${resource//\{\{topicspace\}\}/$topicspace}?rule=$formatted_rule&name=$formatted_name"
-    response=$(curl -X POST -s --user $uname:$pwd $curlUrl)
+    
+    response=`curl -v -X POST -s --user $uname:$pwd $curlUrl`
 
-    echo "Response: "
-    echo $response
+    echo "Response: $response"
     echo ""
 
 fi
